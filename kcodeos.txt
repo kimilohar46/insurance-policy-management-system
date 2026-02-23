@@ -1,0 +1,106 @@
+CREATE DATABASE ipms_db;
+USE ipms_db;
+
+CREATE TABLE Customers (
+    cust_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone_no VARCHAR(15) NOT NULL,
+    address TEXT,
+    dob DATE NOT NULL
+);
+
+CREATE TABLE Insurance_Policies (
+    policy_id INT AUTO_INCREMENT PRIMARY KEY,
+    policy_type VARCHAR(100) NOT NULL,
+    sum_assured DECIMAL(15,2) NOT NULL,
+    premium_amount DECIMAL(10,2) NOT NULL,
+    duration INT NOT NULL
+);
+
+CREATE TABLE Policy_Enrollment (
+    enroll_id INT AUTO_INCREMENT PRIMARY KEY,
+    cust_id INT NOT NULL,
+    policy_id INT NOT NULL,
+    start_date DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'Active',
+    FOREIGN KEY (cust_id) REFERENCES Customers(cust_id) ON DELETE RESTRICT,
+    FOREIGN KEY (policy_id) REFERENCES Insurance_Policies(policy_id) ON DELETE RESTRICT
+);
+
+CREATE TABLE Payments (
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    enroll_id INT NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (enroll_id) REFERENCES Policy_Enrollment(enroll_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Agents (
+    agent_id INT AUTO_INCREMENT PRIMARY KEY,
+    agent_name VARCHAR(100) NOT NULL,
+    contact_no VARCHAR(15) NOT NULL,
+    commission_rate DECIMAL(5,2) NOT NULL
+);
+
+INSERT INTO Customers (first_name,last_name,email,phone_no,address,dob) VALUES
+('Rahul','Sharma','rahul.sharma@email.com','9876543210','Mumbai','1990-05-15'),
+('Priya','Mehta','priya.mehta@email.com','9123456780','Mumbai','1992-08-22'),
+('Amit','Verma','amit.verma@email.com','9988776655','Mumbai','1985-03-10'),
+('Sneha','Patil','sneha.patil@email.com','9011223344','Thane','1995-11-30'),
+('Rohan','Joshi','rohan.joshi@email.com','8877665544','Pune','1988-07-18');
+
+INSERT INTO Insurance_Policies (policy_type,sum_assured,premium_amount,duration) VALUES
+('Life Insurance',1000000,12000,20),
+('Health Insurance',500000,8000,10),
+('Vehicle Insurance',200000,4500,5),
+('Term Insurance',2000000,18000,25),
+('Child Education Plan',750000,9500,18);
+
+INSERT INTO Policy_Enrollment (cust_id,policy_id,start_date,status) VALUES
+(1,1,'2024-01-01','Active'),
+(2,2,'2024-01-15','Active'),
+(3,3,'2024-02-01','Active'),
+(4,4,'2024-02-10','Active'),
+(5,5,'2024-03-01','Active');
+
+INSERT INTO Payments (enroll_id,payment_date,amount) VALUES
+(1,'2024-01-05',12000),
+(2,'2024-01-20',8000),
+(3,'2024-02-05',4500),
+(4,'2024-02-15',18000),
+(5,'2024-03-05',9500);
+
+INSERT INTO Agents (agent_name,contact_no,commission_rate) VALUES
+('Priya Mehta','9123456789',5.50),
+('Amit Kapoor','9234567890',6.00),
+('Sunita Rathi','9345678901',4.75),
+('Deepak Jain','9456789012',7.25),
+('Kavitha Nair','9567890123',5.00);
+
+SELECT C.first_name,C.last_name,IP.policy_type,
+       PE.start_date,PE.status
+FROM Policy_Enrollment PE
+JOIN Customers C ON PE.cust_id=C.cust_id
+JOIN Insurance_Policies IP ON PE.policy_id=IP.policy_id
+WHERE PE.status='Active';
+
+SELECT IP.policy_type,SUM(P.amount) AS total_collected
+FROM Payments P
+JOIN Policy_Enrollment PE ON P.enroll_id=PE.enroll_id
+JOIN Insurance_Policies IP ON PE.policy_id=IP.policy_id
+GROUP BY IP.policy_type;
+
+CREATE OR REPLACE VIEW Active_Enrollments AS
+SELECT C.first_name,C.last_name,IP.policy_type,PE.start_date
+FROM Policy_Enrollment PE
+JOIN Customers C ON PE.cust_id=C.cust_id
+JOIN Insurance_Policies IP ON PE.policy_id=IP.policy_id
+WHERE PE.status='Active';
+
+SELECT * FROM Active_Enrollments;
+
+START TRANSACTION;
+UPDATE Policy_Enrollment SET status='Active' WHERE enroll_id=1;
+COMMIT;
